@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AAST GPA Tracker</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:#121821; --muted:#98a2b3; --text:#e6e7e8; --accent:#2563eb;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text)}
+  header{position:sticky; top:0; z-index:5; background:linear-gradient(180deg,rgba(11,15,20,0.95),rgba(11,15,20,0.75)); backdrop-filter:blur(6px);}
+  .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:12px 16px; border-bottom:1px solid #1f2937}
+  h1{font-size:18px; margin:0 12px 0 0; font-weight:700}
+  button{appearance:none; border:1px solid #1f2937; background:#111827; color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer}
+  button.primary{background:var(--accent); border-color:var(--accent)}
+  button.danger{background:#dc2626; border-color:#dc2626}
+  .pill{padding:6px 10px; border:1px solid #263043; background:#0f1622; border-radius:999px; font-size:12px; color:var(--muted)}
+  .wrap{padding:16px;}
+  .terms{display:flex; gap:16px; overflow-x:auto; padding-bottom:16px}
+  .term{min-width:1250px; background:var(--card); border:1px solid #223048; border-radius:16px; padding:12px;}
+  .term header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+  .kpis{display:flex; gap:12px}
+  .kpi{background:#0f1622; border:1px solid #263043; border-radius:12px; padding:8px 10px; min-width:160px}
+  .kpi h4{margin:0; font-size:12px; color:var(--muted)}
+  .kpi .val{font-size:18px; font-weight:700}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{border:1px solid #263043; padding:6px; text-align:center}
+  th{background:#0f1622; position:sticky; top:48px; z-index:3}
+  input[type="number"], input[type="text"], select{width:100%; background:#0b1220; border:1px solid #1f2a44; color:var(--text); padding:6px 8px; border-radius:8px}
+  input[readonly]{opacity:.9}
+  .ranges{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #saveStatus{margin-left:10px; color:lime; opacity:0; transition:opacity 0.3s;}
+  
+  /* Column width adjustments */
+  td:nth-child(1), th:nth-child(1) { /* Course Code column */
+    width: 7.5%; /* 1.5 times the original width */
+  }
+  td:nth-child(2), th:nth-child(2) { /* Subject column */
+    width: 20%; /* 2 times the original width */
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div class="toolbar">
+      <h1>AAST GPA Tracker</h1>
+      <span class="pill">Your data is saved in this browser</span>
+      <button class="primary" id="saveBtn">Save</button>
+      <button id="loadBtn">Load</button>
+      <button class="danger" id="resetBtn">Reset All</button>
+      <span id="saveStatus">Saved!</span>
+      <button id="exportBtn">Export Data</button>
+      <button id="importBtn">Import Data</button>
+      <input type="file" id="importFile" style="display:none" accept=".json">
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="terms" id="terms"></div>
+
+    <div class="overall">
+      <div class="kpi">
+        <h4>Overall credits</h4>
+        <div class="val" id="overallCredits">0</div>
+      </div>
+      <div class="kpi">
+        <h4>Overall quality points</h4>
+        <div class="val" id="overallQp">0.00</div>
+      </div>
+      <div class="kpi">
+        <h4>Overall cumulative GPA</h4>
+        <div class="val" id="overallGpa">0.000</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const SUBJECT_ROWS = 8;
+  const GRADE_POINTS = {"A+":4.0,"A":3.8,"A-":3.7,"B+":3.3,"B":3.0,"B-":2.7,"C+":2.3,"C":2.0,"C-":1.7,"D+":1.3,"D":1.0,"F":0.0};
+  const GRADE_RANGES = [
+    {label:"D",  lo:60, hi:63},
+    {label:"D+", lo:64, hi:66},
+    {label:"C-", lo:67, hi:69},
+    {label:"C",  lo:70, hi:72},
+    {label:"C+", lo:73, hi:75},
+    {label:"B-", lo:76, hi:79},
+    {label:"B",  lo:80, hi:84},
+    {label:"B+", lo:85, hi:89},
+    {label:"A-", lo:90, hi:92},
+    {label:"A",  lo:93, hi:96},
+    {label:"A+", lo:97, hi:100},
+  ];
+
+  const TERMS = [];
+  for(let i=1;i<=10;i+=2){
+    TERMS.push(`Semester ${i}`);
+    TERMS.push(`Semester ${i+1}`);
+    TERMS.push(`Summer ${(i+1)/2}`);
+  }
+
+  const termsEl = document.getElementById('terms');
+
+  function el(tag, attrs={}, children=[]) {
+    const e = document.createElement(tag);
+    for (const [k,v] of Object.entries(attrs)){
+      if(k==="#text") e.textContent = v; else e.setAttribute(k, v);
+    }
+    for (const c of children){ e.appendChild(c); }
+    return e;
+  }
+
+  function inputNumber(attrs={}){ return el('input', Object.assign({type:'number'}, attrs)); }
+  function inputText(attrs={}){ return el('input', Object.assign({type:'text'}, attrs)); }
+  function selectLetter(){
+    const s = el('select');
+    ["","A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F","W"].forEach(g=> s.appendChild(el('option',{value:g,"#text":g})));
+    return s;
+  }
+
+  function makeTerm(name, index){
+    const termCard = el('div',{class:'term'});
+    const head = el('header',{},[
+      el('div',{class:'title'},[el('strong',{"#text":name})]),
+      el('div',{class:'kpis'},[
+        kpi('Semester GPA',`semGpa_${index}`),
+        kpi('Cumulative GPA',`cumGpa_${index}`)
+      ])
+    ]);
+
+    const table = el('table');
+    const thead = el('thead');
+    const thr = el('tr');
+    const cols = [
+      'Course Code','Subject','7th (30)','12th (20)','Work (10)','Coursework',
+      'Final (40)','Total (100)','Final Range','Total Range',
+      'Credits','Grade (Letter)','Grade Points','Quality Points'
+    ];
+    cols.forEach(c=> thr.appendChild(el('th',{"#text":c})));
+    thead.appendChild(thr); table.appendChild(thead);
+
+    const tbody = el('tbody');
+    const rows=[];
+
+    for(let r=0;r<SUBJECT_ROWS;r++){
+      const tr = el('tr');
+      const courseCode=inputText({placeholder:'CSE101'});
+      const subject=inputText({placeholder:'Course'});
+      const seventh=inputNumber({max:'30'});
+      const twelfth=inputNumber({max:'20'});
+      const work=inputNumber({max:'10'});
+      const coursework=inputNumber({readonly:true});
+      const final=inputNumber({max:'40'});
+      const total=inputNumber({readonly:true});
+      const finalRange=inputText({readonly:true,class:'ranges'});
+      const totalRange=inputText({readonly:true,class:'ranges'});
+      const credits=inputNumber({});
+      const gradeLetter=selectLetter();
+      const gradePoints=inputNumber({readonly:true});
+      const qualityPoints=inputNumber({readonly:true});
+
+      const inputs={courseCode,subject,seventh,twelfth,work,coursework,final,total,finalRange,totalRange,credits,gradeLetter,gradePoints,qualityPoints};
+
+      [courseCode,subject,seventh,twelfth,work,final,credits,gradeLetter].forEach(inp=>{
+        inp.addEventListener('input',()=>{
+          computeRow(inputs);
+          computeTerm(termCard);
+          computeAll();
+          autoSave();
+        });
+      });
+
+      [courseCode,subject,seventh,twelfth,work,coursework,final,total,finalRange,totalRange,credits,gradeLetter,gradePoints,qualityPoints].forEach(inp=> tr.appendChild(el('td',{},[inp])));
+      tbody.appendChild(tr);
+      rows.push(inputs);
+    }
+    table.appendChild(tbody);
+    termCard.appendChild(head);
+    termCard.appendChild(table);
+    termCard.__rows=rows; termCard.__index=index;
+    return termCard;
+  }
+
+  function kpi(label,id){ return el('div',{class:'kpi'},[el('h4',{"#text":label}),el('div',{class:'val',id})]); }
+  function num(v){const x=parseFloat(v);return isNaN(x)?0:x;}
+
+  function computeRow(r){
+    const s=num(r.seventh.value); const t=num(r.twelfth.value); const w=num(r.work.value);
+    const cw=s+t+w; r.coursework.value=cw?cw.toFixed(0):'';
+    const f=r.final.value===''?null:num(r.final.value);
+    r.total.value=(f!==null)?(cw+f).toFixed(0):'';
+
+    const letter=r.gradeLetter.value;
+    
+    // Handle W (Withdraw) case - clear ranges and points
+    if(letter === "W"){
+      r.finalRange.value = '';
+      r.totalRange.value = '';
+      r.gradePoints.value = '';
+      r.qualityPoints.value = '';
+      return;
+    }
+    
+    if(letter){
+      const band=GRADE_RANGES.find(b=>b.label===letter);
+      if(band){
+        const lo=Math.max(0,band.lo-cw); const hi=Math.max(0,band.hi-cw);
+        r.finalRange.value=`${lo}-${hi}`;
+        r.totalRange.value=`${cw+lo}-${cw+hi}`;
+      }
+    } else {r.finalRange.value=''; r.totalRange.value='';}
+
+    const gp=GRADE_POINTS[letter]??''; r.gradePoints.value=gp?gp.toFixed(2):'';
+    const cr=num(r.credits.value); 
+    r.qualityPoints.value=(gp && cr)?(cr*gp).toFixed(3):'';
+  }
+
+  function computeTerm(termCard){
+    let qp=0,cr=0;
+    for(const r of termCard.__rows){
+      const letter = r.gradeLetter.value;
+      
+      // Skip W (Withdraw) courses in GPA calculation
+      if(letter === "W") continue;
+      
+      const gp=parseFloat(r.gradePoints.value); 
+      const c=parseFloat(r.credits.value);
+      
+      // For F grades, credits count but quality points are 0
+      if(letter === "F" && !isNaN(c)){
+        cr += c;
+        // qp remains 0 for F grades
+        continue;
+      }
+      
+      if(!isNaN(gp)&&!isNaN(c)){qp+=gp*c; cr+=c;}
+    }
+    const gpa=cr>0?(qp/cr):0;
+    const gEl=termCard.querySelector(`#semGpa_${termCard.__index}`);
+    if(gEl) gEl.textContent=cr>0?gpa.toFixed(3):'0.000';
+    return{qp,cr};
+  }
+
+  function computeAll(){
+    let runningQP=0,runningCR=0;
+    const termCards=[...document.querySelectorAll('.term')];
+    
+    // First, collect all courses and their grades
+    const allCourses = [];
+    termCards.forEach((termCard, termIndex) => {
+      termCard.__rows.forEach(row => {
+        const courseCode = row.courseCode.value.trim();
+        const grade = row.gradeLetter.value;
+        const credits = parseFloat(row.credits.value) || 0;
+        const qualityPoints = parseFloat(row.qualityPoints.value) || 0;
+        
+        if (courseCode && grade !== "W") {
+          allCourses.push({
+            courseCode,
+            grade,
+            credits,
+            qualityPoints,
+            termIndex
+          });
+        }
+      });
+    });
+    
+    // Now, process courses to handle retakes
+    const courseMap = new Map();
+    
+    // Process courses in chronological order (by term index)
+    allCourses.forEach(course => {
+      if (!courseMap.has(course.courseCode)) {
+        // First time seeing this course
+        courseMap.set(course.courseCode, course);
+        runningCR += course.credits;
+        runningQP += course.qualityPoints;
+      } else {
+        // This is a retake - replace the previous grade
+        const previousCourse = courseMap.get(course.courseCode);
+        
+        // Remove the previous course's contribution
+        runningCR -= previousCourse.credits;
+        runningQP -= previousCourse.qualityPoints;
+        
+        // Add the new course's contribution
+        runningCR += course.credits;
+        runningQP += course.qualityPoints;
+        
+        // Update the map with the new grade
+        courseMap.set(course.courseCode, course);
+      }
+    });
+    
+    // Update the cumulative GPA for each term
+    let cumulativeQP = 0;
+    let cumulativeCR = 0;
+    
+    termCards.forEach((termCard, termIndex) => {
+      // Calculate term-specific GPA
+      const termResult = computeTerm(termCard);
+      
+      // For cumulative GPA, we need to consider all courses up to this term
+      // with proper handling of retakes
+      const coursesUpToTerm = allCourses.filter(course => course.termIndex <= termIndex);
+      const courseMapUpToTerm = new Map();
+      let termCumulativeQP = 0;
+      let termCumulativeCR = 0;
+      
+      coursesUpToTerm.forEach(course => {
+        if (!courseMapUpToTerm.has(course.courseCode)) {
+          courseMapUpToTerm.set(course.courseCode, course);
+          termCumulativeCR += course.credits;
+          termCumulativeQP += course.qualityPoints;
+        } else {
+          // This is a retake - replace the previous grade
+          const previousCourse = courseMapUpToTerm.get(course.courseCode);
+          termCumulativeCR -= previousCourse.credits;
+          termCumulativeQP -= previousCourse.qualityPoints;
+          
+          termCumulativeCR += course.credits;
+          termCumulativeQP += course.qualityPoints;
+          
+          courseMapUpToTerm.set(course.courseCode, course);
+        }
+      });
+      
+      const cEl = termCard.querySelector(`#cumGpa_${termCard.__index}`);
+      if (cEl) {
+        cEl.textContent = termCumulativeCR > 0 ? (termCumulativeQP / termCumulativeCR).toFixed(3) : '0.000';
+      }
+    });
+    
+    document.getElementById('overallQp').textContent = runningQP.toFixed(3);
+    document.getElementById('overallCredits').textContent = runningCR.toFixed(0);
+    document.getElementById('overallGpa').textContent = runningCR > 0 ? (runningQP / runningCR).toFixed(3) : '0.000';
+  }
+
+  // ---------- SAVE/LOAD ----------
+  function saveData(showMsg = true){
+    const data=[];
+    const termCards=[...document.querySelectorAll('.term')];
+    termCards.forEach(term=>{
+      const rows=[];
+      term.__rows.forEach(r=>{
+        rows.push({
+          courseCode:r.courseCode.value,
+          subject:r.subject.value,
+          seventh:r.seventh.value,
+          twelfth:r.twelfth.value,
+          work:r.work.value,
+          final:r.final.value,
+          credits:r.credits.value,
+          gradeLetter:r.gradeLetter.value
+        });
+      });
+      data.push(rows);
+    });
+    localStorage.setItem("gpaData", JSON.stringify(data));
+
+    if(showMsg){
+      const msg=document.getElementById("saveStatus");
+      msg.style.opacity=1;
+      setTimeout(()=> msg.style.opacity=0, 2000);
+    }
+  }
+
+  function loadData(){
+    const saved=localStorage.getItem("gpaData");
+    if(!saved) return;
+    const data=JSON.parse(saved);
+    const termCards=[...document.querySelectorAll('.term')];
+    data.forEach((rows,ti)=>{
+      if(termCards[ti]){
+        rows.forEach((row,ri)=>{
+          const r=termCards[ti].__rows[ri];
+          if(r){
+            r.courseCode.value=row.courseCode||"";
+            r.subject.value=row.subject||"";
+            r.seventh.value=row.seventh||"";
+            r.twelfth.value=row.twelfth||"";
+            r.work.value=row.work||"";
+            r.final.value=row.final||"";
+            r.credits.value=row.credits||"";
+            r.gradeLetter.value=row.gradeLetter||"";
+            computeRow(r);
+          }
+        });
+        computeTerm(termCards[ti]);
+      }
+    });
+    computeAll();
+  }
+
+  function resetAll(){
+    if(!confirm("Are you sure you want to reset everything?")) return;
+    localStorage.removeItem("gpaData");
+    location.reload();
+  }
+
+  // ---------- EXPORT/IMPORT ----------
+  function exportData(){
+    // Save first, so the latest inputs are included
+    saveData(false);
+
+    const data = localStorage.getItem("gpaData");
+    if(!data){
+      alert("No data to export!");
+      return;
+    }
+
+    const blob = new Blob([data], {type: "application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "gpaData.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(){
+    document.getElementById("importFile").click();
+  }
+
+  function handleImport(event){
+    const file = event.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try {
+        const importedData = JSON.parse(e.target.result);
+        // Validate the imported data structure
+        if (Array.isArray(importedData) && importedData.length > 0 && 
+            Array.isArray(importedData[0]) && importedData[0].length > 0) {
+          localStorage.setItem("gpaData", JSON.stringify(importedData));
+          alert("Data imported successfully! Reloading...");
+          location.reload(); // reload to apply imported data
+        } else {
+          alert("Invalid file format! The file doesn't contain valid GPA data.");
+        }
+      } catch(err){
+        alert("Invalid file format! " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    
+    // Reset the file input to allow importing the same file again
+    event.target.value = '';
+  }
+
+  function autoSave(){
+    saveData(false); // silent autosave
+  }
+
+  // Build page
+  const cards=TERMS.map((name,i)=>makeTerm(name,i));
+  cards.forEach(c=>termsEl.appendChild(c));
+  computeAll();
+
+  // Setup event listeners
+  document.getElementById("saveBtn").addEventListener("click", ()=>saveData(true));
+  document.getElementById("loadBtn").addEventListener("click", loadData);
+  document.getElementById("resetBtn").addEventListener("click", resetAll);
+  document.getElementById("exportBtn").addEventListener("click", exportData);
+  document.getElementById("importBtn").addEventListener("click", importData);
+  document.getElementById("importFile").addEventListener("change", handleImport);
+
+  // Auto-load if data exists
+  loadData();
+
+})();
+</script>
+</body>
+<footer style="text-align:center; margin-top:20px; font-size:14px;">
+  © 2025 Youssof Hossam. All rights reserved.
+</footer>
+</html>
