@@ -5,154 +5,545 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AAST GPA Tracker</title>
 <style>
-  :root{
-    --bg:#0b0f14; --card:#121821; --muted:#98a2b3; --text:#e6e7e8; --accent:#2563eb;
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary: #7c3aed;
+    --dark-bg: #0f172a;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --input-bg: #0b1220; /* Same as before */
+    --table-header: #0f1622; /* Same as before */
+    --table-border: #263043; /* Same as before */
   }
-  *{box-sizing:border-box}
-  body{margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text)}
-  header{position:sticky; top:0; z-index:1000; background:linear-gradient(180deg,rgba(11,15,20,0.95),rgba(11,15,20,0.75)); backdrop-filter:blur(6px);}
-  .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:12px 16px; border-bottom:1px solid #1f2937}
-  h1{font-size:18px; margin:0 12px 0 0; font-weight:700}
-  button{appearance:none; border:1px solid #1f2937; background:#111827; color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer}
-  button.primary{background:var(--accent); border-color:var(--accent)}
-  button.danger{background:#dc2626; border-color:#dc2626}
-  .pill{padding:6px 10px; border:1px solid #263043; background:#0f1622; border-radius:999px; font-size:12px; color:var(--muted)}
-  .wrap{padding:16px;}
-  .terms{display:flex; gap:16px; overflow-x:auto; padding-bottom:16px}
-  .term{min-width:1250px; background:var(--card); border:1px solid #223048; border-radius:16px; padding:12px;}
-  .term header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; position:relative; z-index:1}
-  .kpis{display:flex; gap:12px}
-  .kpi{background:#0f1622; border:1px solid #263043; border-radius:12px; padding:8px 10px; min-width:140px}
-  .kpi h4{margin:0; font-size:12px; color:var(--muted)}
-  .kpi .val{font-size:18px; font-weight:700}
-  table{width:100%; border-collapse:collapse; font-size:13px}
-  th,td{border:1px solid #263043; padding:6px; text-align:center}
-  th{background:#0f1622; position:sticky; top:0; z-index:2}
   
-  /* Remove scroll arrows from number inputs */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: var(--dark-bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  
+  /* Main Header - New Design */
+  .main-header {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--table-border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 12px 16px;
+  }
+  
+  .header-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  
+  .logo-text h1 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text);
+  }
+  
+  .status-badge {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    color: var(--success);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+  
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  /* Buttons - New Design */
+  .btn {
+    padding: 8px 12px;
+    border: 1px solid var(--table-border);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #111827;
+    color: var(--text);
+  }
+  
+  .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+  }
+  
+  .btn-secondary:hover {
+    background: rgba(30, 41, 59, 1);
+  }
+  
+  .btn-danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: white;
+  }
+  
+  .btn-danger:hover {
+    background: #b91c1c;
+    transform: translateY(-1px);
+  }
+  
+  /* Main Content */
+  .main-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  
+  /* Terms Container - Same as before */
+  .terms-container {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 16px;
+  }
+  
+  /* Term Card - Same structure, new design */
+  .term-card {
+    min-width: 1250px; /* EXACT SAME as before */
+    border: 1px solid #223048; /* Same as before */
+    border-radius: 16px; /* Same as before */
+    padding: 12px; /* Same as before */
+    overflow: hidden;
+  }
+  
+  /* Different background colors for each term */
+  .term-card:nth-child(1) { /* Semester 1 */
+    background: linear-gradient(145deg, rgba(37, 99, 235, 0.1), rgba(37, 99, 235, 0.05));
+  }
+  
+  .term-card:nth-child(2) { /* Semester 2 */
+    background: linear-gradient(145deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+  }
+  
+  .term-card:nth-child(3) { /* Summer 1 */
+    background: linear-gradient(145deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+  }
+  
+  .term-card:nth-child(4) { /* Semester 3 */
+    background: linear-gradient(145deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+  }
+  
+  .term-card:nth-child(5) { /* Semester 4 */
+    background: linear-gradient(145deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+  }
+  
+  .term-card:nth-child(6) { /* Summer 2 */
+    background: linear-gradient(145deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05));
+  }
+  
+  .term-card:nth-child(7) { /* Semester 5 */
+    background: linear-gradient(145deg, rgba(6, 182, 212, 0.1), rgba(6, 182, 212, 0.05));
+  }
+  
+  .term-card:nth-child(8) { /* Semester 6 */
+    background: linear-gradient(145deg, rgba(217, 119, 6, 0.1), rgba(217, 119, 6, 0.05));
+  }
+  
+  .term-card:nth-child(9) { /* Summer 3 */
+    background: linear-gradient(145deg, rgba(190, 18, 60, 0.1), rgba(190, 18, 60, 0.05));
+  }
+  
+  .term-card:nth-child(10) { /* Semester 7 */
+    background: linear-gradient(145deg, rgba(101, 163, 13, 0.1), rgba(101, 163, 13, 0.05));
+  }
+  
+  .term-card:nth-child(11) { /* Semester 8 */
+    background: linear-gradient(145deg, rgba(168, 85, 247, 0.1), rgba(168, 85, 247, 0.05));
+  }
+  
+  .term-card:nth-child(12) { /* Summer 4 */
+    background: linear-gradient(145deg, rgba(5, 150, 105, 0.1), rgba(5, 150, 105, 0.05));
+  }
+  
+  .term-card:nth-child(13) { /* Semester 9 */
+    background: linear-gradient(145deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.05));
+  }
+  
+  .term-card:nth-child(14) { /* Semester 10 */
+    background: linear-gradient(145deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+  }
+  
+  .term-card:nth-child(15) { /* Summer 5 */
+    background: linear-gradient(145deg, rgba(192, 38, 211, 0.1), rgba(192, 38, 211, 0.05));
+  }
+  
+  .term-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .term-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text);
+    background: rgba(15, 23, 42, 0.7);
+    padding: 8px 16px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+  }
+  
+  .term-stats {
+    display: flex;
+    gap: 12px; /* Same as before */
+  }
+  
+  .stat-box {
+    background: rgba(15, 23, 42, 0.7); /* Same as before */
+    border: 1px solid rgba(51, 65, 85, 0.3); /* Lighter border */
+    border-radius: 12px; /* Same as before */
+    padding: 8px 10px; /* Same as before */
+    min-width: 140px; /* Same as before */
+    backdrop-filter: blur(4px);
+  }
+  
+  .stat-label {
+    font-size: 12px; /* Same as before */
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  
+  .stat-value {
+    font-size: 18px; /* Same as before */
+    font-weight: 700;
+    color: var(--text);
+  }
+  
+  /* Table Styles - EXACT SAME as before */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px; /* Same as before */
+    background: rgba(15, 23, 42, 0.3); /* Semi-transparent background */
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  th, td {
+    border: 1px solid rgba(51, 65, 85, 0.3); /* Lighter border */
+    padding: 6px; /* Same as before */
+    text-align: center; /* Same as before */
+  }
+  
+  th {
+    background: rgba(15, 23, 42, 0.8); /* Darker header */
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    backdrop-filter: blur(4px);
+  }
+  
+  /* Remove scroll arrows from number inputs - Same as before */
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
+  
   input[type="number"] {
     -moz-appearance: textfield;
   }
   
-  input[type="number"], input[type="text"], select{
-    width:100%; 
-    background:#0b1220; 
-    border:1px solid #1f2a44; 
-    color:var(--text); 
-    padding:6px 8px; 
-    border-radius:8px;
-    font-size:13px;
+  /* Input Styles - EXACT SAME as before */
+  input[type="number"], input[type="text"], select {
+    width: 100%; 
+    background: rgba(15, 23, 42, 0.5); /* Semi-transparent */
+    border: 1px solid rgba(51, 65, 85, 0.3); /* Lighter border */
+    color: var(--text); 
+    padding: 6px 8px; /* Same as before */
+    border-radius: 8px; /* Same as before */
+    font-size: 13px; /* Same as before */
+    backdrop-filter: blur(4px);
   }
   
-  /* Make select dropdowns wider for better visibility */
+  input[type="number"]:focus, input[type="text"]:focus, select:focus {
+    border-color: rgba(37, 99, 235, 0.5);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    outline: none;
+  }
+  
+  /* Make select dropdowns wider for better visibility - Same as before */
   select {
-    min-width: 80px;
-    max-width: 100px;
+    min-width: 80px; /* Same as before */
+    max-width: 100px; /* Same as before */
   }
   
-  input[readonly]{opacity:.9}
+  input[readonly] {
+    opacity: .9; /* Same as before */
+    background: rgba(15, 23, 42, 0.3);
+  }
   
-  /* Remove the ellipsis and allow full text display */
-  .ranges{
+  /* Range cells - EXACT SAME as before */
+  .ranges {
     white-space: normal;
     word-wrap: break-word;
-    min-width: 100px;
-    max-width: 120px;
-    padding: 6px;
-    font-size: 12.5px;
-    line-height: 1.3;
+    min-width: 100px; /* Same as before */
+    max-width: 120px; /* Same as before */
+    padding: 6px; /* Same as before */
+    font-size: 12.5px; /* Same as before */
+    line-height: 1.3; /* Same as before */
     height: auto;
-    text-align: center;
+    text-align: center; /* Same as before */
   }
   
-  #saveStatus{margin-left:10px; color:lime; opacity:0; transition:opacity 0.3s;}
-  
-  /* Column width adjustments */
+  /* Column width adjustments - EXACT SAME as before */
   td:nth-child(1), th:nth-child(1) { /* Course Code column */
-    width: 7%;
+    width: 7%; /* Same as before */
   }
   td:nth-child(2), th:nth-child(2) { /* Subject column */
-    width: 18%;
+    width: 18%; /* Same as before */
   }
   td:nth-child(11), th:nth-child(11) { /* Credits column */
-    width: 4.5%;
-    min-width: 55px;
+    width: 4.5%; /* Same as before */
+    min-width: 55px; /* Same as before */
   }
   td:nth-child(12), th:nth-child(12) { /* Grade Letter column */
-    width: 6.5%;
-    min-width: 75px;
+    width: 6.5%; /* Same as before */
+    min-width: 75px; /* Same as before */
   }
   td:nth-child(9), th:nth-child(9) { /* Final Range column */
-    width: 8%;
-    min-width: 95px;
+    width: 8%; /* Same as before */
+    min-width: 95px; /* Same as before */
   }
-  td:nth-child(10), th:nth-child(10) { /* Total Range column - made much wider */
-    width: 10%;
-    min-width: 120px;
+  td:nth-child(10), th:nth-child(10) { /* Total Range column */
+    width: 10%; /* Same as before */
+    min-width: 120px; /* Same as before */
   }
   td:nth-child(13), th:nth-child(13) { /* Grade Points column */
-    width: 6%;
-    min-width: 70px;
+    width: 6%; /* Same as before */
+    min-width: 70px; /* Same as before */
   }
   td:nth-child(14), th:nth-child(14) { /* Quality Points column */
-    width: 6.5%;
-    min-width: 85px;
+    width: 6.5%; /* Same as before */
+    min-width: 85px; /* Same as before */
   }
   
-  /* Adjust other columns proportionally */
+  /* Adjust other columns proportionally - EXACT SAME as before */
   td:nth-child(3), th:nth-child(3),  /* 7th */
   td:nth-child(4), th:nth-child(4),  /* 12th */
   td:nth-child(5), th:nth-child(5),  /* Work */
   td:nth-child(6), th:nth-child(6),  /* Coursework */
   td:nth-child(7), th:nth-child(7),  /* Final */
   td:nth-child(8), th:nth-child(8) { /* Total */
-    width: 5%;
-    min-width: 58px;
+    width: 5%; /* Same as before */
+    min-width: 58px; /* Same as before */
+  }
+  
+  /* Overall Stats - New Design */
+  .overall-stats {
+    margin-top: 20px;
+    padding: 16px;
+    background: linear-gradient(145deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.05));
+    border: 1px solid rgba(51, 65, 85, 0.3);
+    border-radius: 16px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    backdrop-filter: blur(4px);
+  }
+  
+  .overall-stat-box {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(51, 65, 85, 0.3);
+    border-radius: 12px;
+    padding: 8px 10px;
+    min-width: 160px;
+    flex: 1;
+    backdrop-filter: blur(4px);
+  }
+  
+  .overall-stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  
+  .overall-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  
+  /* Footer */
+  .main-footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    border-top: 1px solid rgba(51, 65, 85, 0.3);
+    margin-top: 20px;
+  }
+  
+  /* Notification */
+  .notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+  
+  .notification.show {
+    opacity: 1;
+  }
+  
+  /* Hover effect for table rows */
+  tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.05) !important;
   }
 </style>
 </head>
 <body>
-  <header>
-    <div class="toolbar">
-      <h1>AAST GPA Tracker</h1>
-      <span class="pill">Your data is saved in this browser</span>
-      <button class="primary" id="saveBtn">Save</button>
-      <button id="loadBtn" style="display:none;">Load</button>
-      <button class="danger" id="resetBtn">Reset All</button>
-      <span id="saveStatus">Saved!</span>
-      <button id="exportBtn">Export Data</button>
-      <button id="importBtn">Import Data</button>
-      <input type="file" id="importFile" style="display:none" accept=".json">
+  <!-- Main Header -->
+  <header class="main-header">
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">A</div>
+        <div class="logo-text">
+          <h1>AAST GPA Tracker</h1>
+        </div>
+      </div>
+      
+      <span class="status-badge">
+        <span class="status-dot"></span>
+        Your data is saved in this browser
+      </span>
+      
+      <button class="btn btn-primary" id="saveBtn">
+        Save
+      </button>
+      
+      <button class="btn btn-secondary" id="exportBtn">
+        Export Data
+      </button>
+      
+      <button class="btn btn-secondary" id="importBtn">
+        Import Data
+      </button>
+      
+      <button class="btn btn-danger" id="resetBtn">
+        Reset All
+      </button>
     </div>
   </header>
 
-  <div class="wrap">
-    <div class="terms" id="terms"></div>
+  <!-- Main Content -->
+  <main class="main-container">
+    <!-- Terms Container -->
+    <div class="terms-container" id="terms"></div>
 
-    <div class="overall">
-      <div class="kpi">
-        <h4>Overall Credits</h4>
-        <div class="val" id="overallCredits">0</div>
+    <!-- Overall Statistics -->
+    <div class="overall-stats">
+      <div class="overall-stat-box">
+        <div class="overall-stat-label">Overall credits</div>
+        <div class="overall-stat-value" id="overallCredits">0</div>
       </div>
-      <div class="kpi">
-        <h4>Overall Quality Points</h4>
-        <div class="val" id="overallQp">0.00</div>
+      
+      <div class="overall-stat-box">
+        <div class="overall-stat-label">Overall quality points</div>
+        <div class="overall-stat-value" id="overallQp">0.00</div>
       </div>
-      <div class="kpi">
-        <h4>Overall GPA</h4>
-        <div class="val" id="overallGpa">0.000</div>
+      
+      <div class="overall-stat-box">
+        <div class="overall-stat-label">Overall cumulative GPA</div>
+        <div class="overall-stat-value" id="overallGpa">0.000</div>
       </div>
-      <div class="kpi">
-        <h4>Rounded Overall GPA</h4>
-        <div class="val" id="overallGpaRounded">0.00</div>
+      
+      <div class="overall-stat-box">
+        <div class="overall-stat-label">Rounded Overall GPA</div>
+        <div class="overall-stat-value" id="overallGpaRounded">0.00</div>
       </div>
     </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="main-footer">
+    © 2025 Youssof Hossam. All rights reserved.
+  </footer>
+
+  <!-- Notification -->
+  <div class="notification" id="saveNotification">
+    Saved!
   </div>
+
+  <!-- Hidden Import Input -->
+  <input type="file" id="importFile" style="display:none" accept=".json">
 
 <script>
 (function(){
@@ -194,7 +585,7 @@
     return el('input', Object.assign({
       type:'number', 
       step:'0.1',
-      onwheel: 'this.blur()' // Prevent scrolling from changing values
+      onwheel: 'this.blur()'
     }, attrs)); 
   }
   
@@ -206,10 +597,8 @@
   
   function selectLetter(){
     const s = el('select');
-    // Add empty option first
     s.appendChild(el('option',{value:"","#text":"Select"}));
     
-    // Add all grade options
     ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F","P","W"].forEach(g=> {
       const option = el('option',{value:g,"#text":g});
       s.appendChild(option);
@@ -219,26 +608,30 @@
   }
 
   function makeTerm(name, index){
-    const termCard = el('div',{class:'term'});
-    const head = el('header',{},[
-      el('div',{class:'title'},[el('strong',{"#text":name})]),
-      el('div',{class:'kpis'},[
-        kpi('Semester GPA',`semGpa_${index}`),
-        kpi('Cumulative GPA',`cumGpa_${index}`),
-        kpi('Rounded GPA',`roundedGpa_${index}`)
+    const termCard = el('div',{class:'term-card'});
+    const head = el('header',{class:'term-header'},[
+      el('div',{class:'term-title'},[el('strong',{"#text":name})]),
+      el('div',{class:'term-stats'},[
+        statBox('Semester GPA', `semGpa_${index}`),
+        statBox('Cumulative GPA', `cumGpa_${index}`),
+        statBox('Rounded GPA', `roundedGpa_${index}`)
       ])
     ]);
 
     const table = el('table');
     const thead = el('thead');
     const thr = el('tr');
+    
+    // Define column headers - EXACTLY 14 COLUMNS AS BEFORE
     const cols = [
       'Course Code','Subject','7th (30)','12th (20)','Work (10)','Coursework',
       'Final (40)','Total (100)','Final Range','Total Range',
       'Credits','Grade (Letter)','Grade Points','Quality Points'
     ];
+    
     cols.forEach(c=> thr.appendChild(el('th',{"#text":c})));
-    thead.appendChild(thr); table.appendChild(thead);
+    thead.appendChild(thr); 
+    table.appendChild(thead);
 
     const tbody = el('tbody');
     const rows=[];
@@ -246,7 +639,7 @@
     for(let r=0;r<SUBJECT_ROWS;r++){
       const tr = el('tr');
       
-      // Create inputs with proper attributes
+      // Create inputs - EXACTLY SAME AS BEFORE
       const courseCode = inputText({placeholder:'CSE101'});
       const subject = inputText({placeholder:'Course'});
       const seventh = inputNumber({max:'30', min:'0'});
@@ -268,7 +661,7 @@
         gradePoints, qualityPoints
       };
 
-      // Add event listeners to all inputs that should trigger calculations
+      // Add event listeners - SAME AS BEFORE
       [courseCode, subject, seventh, twelfth, work, final, credits, gradeLetter].forEach(inp => {
         inp.addEventListener('input', () => {
           computeRow(inputs);
@@ -278,7 +671,7 @@
         });
       });
 
-      // Add inputs to table cells
+      // Add cells to row - SAME ORDER AS BEFORE
       [
         courseCode, subject, seventh, twelfth, work, coursework, 
         final, total, finalRange, totalRange, credits, gradeLetter, 
@@ -298,29 +691,30 @@
     return termCard;
   }
 
-  function kpi(label,id){ return el('div',{class:'kpi'},[el('h4',{"#text":label}),el('div',{class:'val',id})]); }
+  function statBox(label, id){ 
+    return el('div',{class:'stat-box'},[
+      el('div',{class:'stat-label', "#text":label}),
+      el('div',{class:'stat-value', id: id, "#text":'0.000'})
+    ]); 
+  }
+  
   function num(v){const x=parseFloat(v);return isNaN(x)?0:x;}
   
-  // Function to format number - removes .0 if it's a whole number
   function formatNumber(value, decimals = 1) {
     if (value === 0 || value === '') return '';
     
     const numValue = parseFloat(value);
     if (isNaN(numValue)) return '';
     
-    // Check if it's a whole number
     if (numValue % 1 === 0) {
       return numValue.toString();
     }
     
-    // Otherwise show with specified decimals
     return numValue.toFixed(decimals);
   }
   
-  // Function to round GPA to 1 decimal place with proper rounding
   function roundGPA(gpa) {
     if (gpa === 0) return 0.00;
-    // Round to 1 decimal place using standard rounding
     return Math.round(gpa * 10) / 10;
   }
 
@@ -329,7 +723,6 @@
     const t = num(r.twelfth.value); 
     const w = num(r.work.value);
     
-    // Calculate coursework
     const cw = s + t + w; 
     r.coursework.value = formatNumber(cw);
     
@@ -339,7 +732,6 @@
 
     const letter = r.gradeLetter.value;
     
-    // Handle W (Withdraw) case
     if(letter === "W"){
       r.finalRange.value = '';
       r.totalRange.value = '';
@@ -348,7 +740,6 @@
       return;
     }
     
-    // Handle P (Pass) case
     if(letter === "P"){
       r.finalRange.value = '';
       r.totalRange.value = '';
@@ -357,7 +748,6 @@
       return;
     }
     
-    // Calculate ranges for letter grades
     if(letter && letter !== "Select"){
       const band = GRADE_RANGES.find(b => b.label === letter);
       if(band){
@@ -365,7 +755,6 @@
         const lo = Math.max(0, band.lo - cwNum); 
         const hi = Math.max(0, band.hi - cwNum);
         
-        // Format final range
         if (lo === 0 && hi === 0) {
           r.finalRange.value = '';
         } else {
@@ -374,7 +763,6 @@
           r.finalRange.value = `${loFormatted}-${hiFormatted}`;
         }
         
-        // Format total range
         const totalLo = cwNum + lo;
         const totalHi = cwNum + hi;
         const totalLoFormatted = formatNumber(totalLo);
@@ -389,7 +777,6 @@
       r.totalRange.value = '';
     }
 
-    // Calculate grade points and quality points
     const gp = GRADE_POINTS[letter] ?? ''; 
     r.gradePoints.value = gp ? formatNumber(gp, 2) : '';
     const cr = num(r.credits.value); 
@@ -401,13 +788,11 @@
     for(const r of termCard.__rows){
       const letter = r.gradeLetter.value;
       
-      // Skip W (Withdraw) and P (Pass) courses in GPA calculation
       if(letter === "W" || letter === "P" || letter === "Select" || letter === "") continue;
       
       const gp = parseFloat(r.gradePoints.value); 
       const c = parseFloat(r.credits.value);
       
-      // For F grades, credits count but quality points are 0
       if(letter === "F" && !isNaN(c)){
         cr += c;
         continue;
@@ -430,9 +815,8 @@
 
   function computeAll(){
     let runningQP = 0, runningCR = 0;
-    const termCards = [...document.querySelectorAll('.term')];
+    const termCards = [...document.querySelectorAll('.term-card')];
     
-    // First, collect all courses and their grades
     const allCourses = [];
     termCards.forEach((termCard, termIndex) => {
       termCard.__rows.forEach(row => {
@@ -453,49 +837,36 @@
       });
     });
     
-    // Process courses to handle retakes
     const courseMap = new Map();
     
-    // Process courses in chronological order
     allCourses.forEach(course => {
       if (!courseMap.has(course.courseCode)) {
-        // First time seeing this course
         courseMap.set(course.courseCode, course);
         runningCR += course.credits;
         runningQP += course.qualityPoints;
       } else {
-        // This is a retake - replace the previous grade
         const previousCourse = courseMap.get(course.courseCode);
-        
-        // Remove the previous course's contribution
         runningCR -= previousCourse.credits;
         runningQP -= previousCourse.qualityPoints;
         
-        // Add the new course's contribution
         runningCR += course.credits;
         runningQP += course.qualityPoints;
         
-        // Update the map with the new grade
         courseMap.set(course.courseCode, course);
       }
     });
     
-    // Calculate overall GPA
     const overallGpa = runningCR > 0 ? (runningQP / runningCR) : 0;
     const overallRoundedGpa = roundGPA(overallGpa);
     
-    // Update overall statistics
     document.getElementById('overallQp').textContent = runningQP.toFixed(3);
     document.getElementById('overallCredits').textContent = runningCR.toFixed(0);
     document.getElementById('overallGpa').textContent = runningCR > 0 ? overallGpa.toFixed(3) : '0.000';
     document.getElementById('overallGpaRounded').textContent = runningCR > 0 ? overallRoundedGpa.toFixed(1) : '0.0';
     
-    // Update the cumulative GPA for each term
     termCards.forEach((termCard, termIndex) => {
-      // Calculate term-specific GPA
       const termResult = computeTerm(termCard);
       
-      // Calculate cumulative GPA up to this term
       const coursesUpToTerm = allCourses.filter(course => course.termIndex <= termIndex);
       const courseMapUpToTerm = new Map();
       let termCumulativeQP = 0;
@@ -507,7 +878,6 @@
           termCumulativeCR += course.credits;
           termCumulativeQP += course.qualityPoints;
         } else {
-          // This is a retake - replace the previous grade
           const previousCourse = courseMapUpToTerm.get(course.courseCode);
           termCumulativeCR -= previousCourse.credits;
           termCumulativeQP -= previousCourse.qualityPoints;
@@ -534,10 +904,10 @@
     });
   }
 
-  // ---------- SAVE/LOAD ----------
+  // Save/Load functions
   function saveData(showMsg = true){
     const data = [];
-    const termCards = [...document.querySelectorAll('.term')];
+    const termCards = [...document.querySelectorAll('.term-card')];
     termCards.forEach(term => {
       const rows = [];
       term.__rows.forEach(r => {
@@ -557,9 +927,9 @@
     localStorage.setItem("gpaData", JSON.stringify(data));
 
     if(showMsg){
-      const msg = document.getElementById("saveStatus");
-      msg.style.opacity = 1;
-      setTimeout(() => msg.style.opacity = 0, 2000);
+      const notification = document.getElementById("saveNotification");
+      notification.classList.add("show");
+      setTimeout(() => notification.classList.remove("show"), 2000);
     }
   }
 
@@ -567,7 +937,7 @@
     const saved = localStorage.getItem("gpaData");
     if(!saved) return;
     const data = JSON.parse(saved);
-    const termCards = [...document.querySelectorAll('.term')];
+    const termCards = [...document.querySelectorAll('.term-card')];
     data.forEach((rows, ti) => {
       if(termCards[ti]){
         rows.forEach((row, ri) => {
@@ -596,10 +966,8 @@
     location.reload();
   }
 
-  // ---------- EXPORT/IMPORT ----------
   function exportData(){
     saveData(false);
-
     const data = localStorage.getItem("gpaData");
     if(!data){
       alert("No data to export!");
@@ -642,7 +1010,6 @@
       }
     };
     reader.readAsText(file);
-    
     event.target.value = '';
   }
 
@@ -657,10 +1024,9 @@
 
   // Setup event listeners
   document.getElementById("saveBtn").addEventListener("click", () => saveData(true));
-  document.getElementById("loadBtn").addEventListener("click", loadData);
-  document.getElementById("resetBtn").addEventListener("click", resetAll);
   document.getElementById("exportBtn").addEventListener("click", exportData);
   document.getElementById("importBtn").addEventListener("click", importData);
+  document.getElementById("resetBtn").addEventListener("click", resetAll);
   document.getElementById("importFile").addEventListener("change", handleImport);
 
   // Auto-load if data exists
@@ -669,7 +1035,4 @@
 })();
 </script>
 </body>
-<footer style="text-align:center; margin-top:20px; font-size:14px;">
-  © 2025 Youssof Hossam. All rights reserved.
-</footer>
 </html>
