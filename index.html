@@ -22,23 +22,97 @@
   .term{min-width:1250px; background:var(--card); border:1px solid #223048; border-radius:16px; padding:12px;}
   .term header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
   .kpis{display:flex; gap:12px}
-  .kpi{background:#0f1622; border:1px solid #263043; border-radius:12px; padding:8px 10px; min-width:160px}
+  .kpi{background:#0f1622; border:1px solid #263043; border-radius:12px; padding:8px 10px; min-width:140px}
   .kpi h4{margin:0; font-size:12px; color:var(--muted)}
   .kpi .val{font-size:18px; font-weight:700}
   table{width:100%; border-collapse:collapse; font-size:13px}
   th,td{border:1px solid #263043; padding:6px; text-align:center}
   th{background:#0f1622; position:sticky; top:48px; z-index:3}
-  input[type="number"], input[type="text"], select{width:100%; background:#0b1220; border:1px solid #1f2a44; color:var(--text); padding:6px 8px; border-radius:8px}
+  
+  /* Remove scroll arrows from number inputs */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+  
+  input[type="number"], input[type="text"], select{
+    width:100%; 
+    background:#0b1220; 
+    border:1px solid #1f2a44; 
+    color:var(--text); 
+    padding:6px 8px; 
+    border-radius:8px;
+    font-size:13px;
+  }
+  
+  /* Make select dropdowns wider for better visibility */
+  select {
+    min-width: 80px;
+    max-width: 100px;
+  }
+  
   input[readonly]{opacity:.9}
-  .ranges{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  
+  /* Remove the ellipsis and allow full text display */
+  .ranges{
+    white-space: normal;
+    word-wrap: break-word;
+    min-width: 100px;
+    max-width: 120px;
+    padding: 6px;
+    font-size: 12.5px;
+    line-height: 1.3;
+    height: auto;
+    text-align: center;
+  }
+  
   #saveStatus{margin-left:10px; color:lime; opacity:0; transition:opacity 0.3s;}
   
   /* Column width adjustments */
   td:nth-child(1), th:nth-child(1) { /* Course Code column */
-    width: 7.5%; /* 1.5 times the original width */
+    width: 7%;
   }
   td:nth-child(2), th:nth-child(2) { /* Subject column */
-    width: 20%; /* 2 times the original width */
+    width: 18%;
+  }
+  td:nth-child(11), th:nth-child(11) { /* Credits column */
+    width: 4.5%;
+    min-width: 55px;
+  }
+  td:nth-child(12), th:nth-child(12) { /* Grade Letter column */
+    width: 6.5%;
+    min-width: 75px;
+  }
+  td:nth-child(9), th:nth-child(9) { /* Final Range column */
+    width: 8%;
+    min-width: 95px;
+  }
+  td:nth-child(10), th:nth-child(10) { /* Total Range column - made much wider */
+    width: 10%;
+    min-width: 120px;
+  }
+  td:nth-child(13), th:nth-child(13) { /* Grade Points column */
+    width: 6%;
+    min-width: 70px;
+  }
+  td:nth-child(14), th:nth-child(14) { /* Quality Points column */
+    width: 6.5%;
+    min-width: 85px;
+  }
+  
+  /* Adjust other columns proportionally */
+  td:nth-child(3), th:nth-child(3),  /* 7th */
+  td:nth-child(4), th:nth-child(4),  /* 12th */
+  td:nth-child(5), th:nth-child(5),  /* Work */
+  td:nth-child(6), th:nth-child(6),  /* Coursework */
+  td:nth-child(7), th:nth-child(7),  /* Final */
+  td:nth-child(8), th:nth-child(8) { /* Total */
+    width: 5%;
+    min-width: 58px;
   }
 </style>
 </head>
@@ -48,7 +122,7 @@
       <h1>AAST GPA Tracker</h1>
       <span class="pill">Your data is saved in this browser</span>
       <button class="primary" id="saveBtn">Save</button>
-      <button id="loadBtn">Load</button>
+      <button id="loadBtn" style="display:none;">Load</button>
       <button class="danger" id="resetBtn">Reset All</button>
       <span id="saveStatus">Saved!</span>
       <button id="exportBtn">Export Data</button>
@@ -62,16 +136,20 @@
 
     <div class="overall">
       <div class="kpi">
-        <h4>Overall credits</h4>
+        <h4>Overall Credits</h4>
         <div class="val" id="overallCredits">0</div>
       </div>
       <div class="kpi">
-        <h4>Overall quality points</h4>
+        <h4>Overall Quality Points</h4>
         <div class="val" id="overallQp">0.00</div>
       </div>
       <div class="kpi">
-        <h4>Overall cumulative GPA</h4>
+        <h4>Overall GPA</h4>
         <div class="val" id="overallGpa">0.000</div>
+      </div>
+      <div class="kpi">
+        <h4>Rounded Overall GPA</h4>
+        <div class="val" id="overallGpaRounded">0.00</div>
       </div>
     </div>
   </div>
@@ -112,11 +190,31 @@
     return e;
   }
 
-  function inputNumber(attrs={}){ return el('input', Object.assign({type:'number'}, attrs)); }
-  function inputText(attrs={}){ return el('input', Object.assign({type:'text'}, attrs)); }
+  function inputNumber(attrs={}){ 
+    return el('input', Object.assign({
+      type:'number', 
+      step:'0.1',
+      onwheel: 'this.blur()' // Prevent scrolling from changing values
+    }, attrs)); 
+  }
+  
+  function inputText(attrs={}){ 
+    return el('input', Object.assign({
+      type:'text'
+    }, attrs)); 
+  }
+  
   function selectLetter(){
     const s = el('select');
-    ["","A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F","W"].forEach(g=> s.appendChild(el('option',{value:g,"#text":g})));
+    // Add empty option first
+    s.appendChild(el('option',{value:"","#text":"Select"}));
+    
+    // Add all grade options
+    ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","F","P","W"].forEach(g=> {
+      const option = el('option',{value:g,"#text":g});
+      s.appendChild(option);
+    });
+    
     return s;
   }
 
@@ -126,7 +224,8 @@
       el('div',{class:'title'},[el('strong',{"#text":name})]),
       el('div',{class:'kpis'},[
         kpi('Semester GPA',`semGpa_${index}`),
-        kpi('Cumulative GPA',`cumGpa_${index}`)
+        kpi('Cumulative GPA',`cumGpa_${index}`),
+        kpi('Rounded Cum GPA',`roundedGpa_${index}`)
       ])
     ]);
 
@@ -146,25 +245,32 @@
 
     for(let r=0;r<SUBJECT_ROWS;r++){
       const tr = el('tr');
-      const courseCode=inputText({placeholder:'CSE101'});
-      const subject=inputText({placeholder:'Course'});
-      const seventh=inputNumber({max:'30'});
-      const twelfth=inputNumber({max:'20'});
-      const work=inputNumber({max:'10'});
-      const coursework=inputNumber({readonly:true});
-      const final=inputNumber({max:'40'});
-      const total=inputNumber({readonly:true});
-      const finalRange=inputText({readonly:true,class:'ranges'});
-      const totalRange=inputText({readonly:true,class:'ranges'});
-      const credits=inputNumber({});
-      const gradeLetter=selectLetter();
-      const gradePoints=inputNumber({readonly:true});
-      const qualityPoints=inputNumber({readonly:true});
+      
+      // Create inputs with proper attributes
+      const courseCode = inputText({placeholder:'CSE101'});
+      const subject = inputText({placeholder:'Course'});
+      const seventh = inputNumber({max:'30', min:'0'});
+      const twelfth = inputNumber({max:'20', min:'0'});
+      const work = inputNumber({max:'10', min:'0'});
+      const coursework = inputNumber({readonly:true});
+      const final = inputNumber({max:'40', min:'0'});
+      const total = inputNumber({readonly:true});
+      const finalRange = inputText({readonly:true, class:'ranges'});
+      const totalRange = inputText({readonly:true, class:'ranges'});
+      const credits = inputNumber({min:'0', max:'10', step:'1'});
+      const gradeLetter = selectLetter();
+      const gradePoints = inputNumber({readonly:true});
+      const qualityPoints = inputNumber({readonly:true});
 
-      const inputs={courseCode,subject,seventh,twelfth,work,coursework,final,total,finalRange,totalRange,credits,gradeLetter,gradePoints,qualityPoints};
+      const inputs = {
+        courseCode, subject, seventh, twelfth, work, coursework, 
+        final, total, finalRange, totalRange, credits, gradeLetter, 
+        gradePoints, qualityPoints
+      };
 
-      [courseCode,subject,seventh,twelfth,work,final,credits,gradeLetter].forEach(inp=>{
-        inp.addEventListener('input',()=>{
+      // Add event listeners to all inputs that should trigger calculations
+      [courseCode, subject, seventh, twelfth, work, final, credits, gradeLetter].forEach(inp => {
+        inp.addEventListener('input', () => {
           computeRow(inputs);
           computeTerm(termCard);
           computeAll();
@@ -172,29 +278,68 @@
         });
       });
 
-      [courseCode,subject,seventh,twelfth,work,coursework,final,total,finalRange,totalRange,credits,gradeLetter,gradePoints,qualityPoints].forEach(inp=> tr.appendChild(el('td',{},[inp])));
+      // Add inputs to table cells
+      [
+        courseCode, subject, seventh, twelfth, work, coursework, 
+        final, total, finalRange, totalRange, credits, gradeLetter, 
+        gradePoints, qualityPoints
+      ].forEach(inp => tr.appendChild(el('td',{},[inp])));
+      
       tbody.appendChild(tr);
       rows.push(inputs);
     }
+    
     table.appendChild(tbody);
     termCard.appendChild(head);
     termCard.appendChild(table);
-    termCard.__rows=rows; termCard.__index=index;
+    termCard.__rows = rows; 
+    termCard.__index = index;
+    
     return termCard;
   }
 
   function kpi(label,id){ return el('div',{class:'kpi'},[el('h4',{"#text":label}),el('div',{class:'val',id})]); }
   function num(v){const x=parseFloat(v);return isNaN(x)?0:x;}
+  
+  // Function to format number - removes .0 if it's a whole number
+  function formatNumber(value, decimals = 1) {
+    if (value === 0 || value === '') return '';
+    
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) return '';
+    
+    // Check if it's a whole number
+    if (numValue % 1 === 0) {
+      return numValue.toString();
+    }
+    
+    // Otherwise show with specified decimals
+    return numValue.toFixed(decimals);
+  }
+  
+  // Function to round GPA to 1 decimal place with proper rounding
+  function roundGPA(gpa) {
+    if (gpa === 0) return 0.00;
+    // Round to 1 decimal place using standard rounding
+    return Math.round(gpa * 10) / 10;
+  }
 
   function computeRow(r){
-    const s=num(r.seventh.value); const t=num(r.twelfth.value); const w=num(r.work.value);
-    const cw=s+t+w; r.coursework.value=cw?cw.toFixed(0):'';
-    const f=r.final.value===''?null:num(r.final.value);
-    r.total.value=(f!==null)?(cw+f).toFixed(0):'';
-
-    const letter=r.gradeLetter.value;
+    const s = num(r.seventh.value); 
+    const t = num(r.twelfth.value); 
+    const w = num(r.work.value);
     
-    // Handle W (Withdraw) case - clear ranges and points
+    // Calculate coursework
+    const cw = s + t + w; 
+    r.coursework.value = formatNumber(cw);
+    
+    const f = r.final.value === '' ? null : num(r.final.value);
+    const totalValue = (f !== null) ? (cw + f) : null;
+    r.total.value = totalValue !== null ? formatNumber(totalValue) : '';
+
+    const letter = r.gradeLetter.value;
+    
+    // Handle W (Withdraw) case
     if(letter === "W"){
       r.finalRange.value = '';
       r.totalRange.value = '';
@@ -203,49 +348,89 @@
       return;
     }
     
-    if(letter){
-      const band=GRADE_RANGES.find(b=>b.label===letter);
+    // Handle P (Pass) case
+    if(letter === "P"){
+      r.finalRange.value = '';
+      r.totalRange.value = '';
+      r.gradePoints.value = '';
+      r.qualityPoints.value = '';
+      return;
+    }
+    
+    // Calculate ranges for letter grades
+    if(letter && letter !== "Select"){
+      const band = GRADE_RANGES.find(b => b.label === letter);
       if(band){
-        const lo=Math.max(0,band.lo-cw); const hi=Math.max(0,band.hi-cw);
-        r.finalRange.value=`${lo}-${hi}`;
-        r.totalRange.value=`${cw+lo}-${cw+hi}`;
+        const cwNum = num(r.coursework.value);
+        const lo = Math.max(0, band.lo - cwNum); 
+        const hi = Math.max(0, band.hi - cwNum);
+        
+        // Format final range
+        if (lo === 0 && hi === 0) {
+          r.finalRange.value = '';
+        } else {
+          const loFormatted = formatNumber(lo);
+          const hiFormatted = formatNumber(hi);
+          r.finalRange.value = `${loFormatted}-${hiFormatted}`;
+        }
+        
+        // Format total range
+        const totalLo = cwNum + lo;
+        const totalHi = cwNum + hi;
+        const totalLoFormatted = formatNumber(totalLo);
+        const totalHiFormatted = formatNumber(totalHi);
+        r.totalRange.value = `${totalLoFormatted}-${totalHiFormatted}`;
+      } else {
+        r.finalRange.value = '';
+        r.totalRange.value = '';
       }
-    } else {r.finalRange.value=''; r.totalRange.value='';}
+    } else {
+      r.finalRange.value = '';
+      r.totalRange.value = '';
+    }
 
-    const gp=GRADE_POINTS[letter]??''; r.gradePoints.value=gp?gp.toFixed(2):'';
-    const cr=num(r.credits.value); 
-    r.qualityPoints.value=(gp && cr)?(cr*gp).toFixed(3):'';
+    // Calculate grade points and quality points
+    const gp = GRADE_POINTS[letter] ?? ''; 
+    r.gradePoints.value = gp ? formatNumber(gp, 2) : '';
+    const cr = num(r.credits.value); 
+    r.qualityPoints.value = (gp && cr) ? formatNumber(cr * gp, 3) : '';
   }
 
   function computeTerm(termCard){
-    let qp=0,cr=0;
+    let qp = 0, cr = 0;
     for(const r of termCard.__rows){
       const letter = r.gradeLetter.value;
       
-      // Skip W (Withdraw) courses in GPA calculation
-      if(letter === "W") continue;
+      // Skip W (Withdraw) and P (Pass) courses in GPA calculation
+      if(letter === "W" || letter === "P" || letter === "Select" || letter === "") continue;
       
-      const gp=parseFloat(r.gradePoints.value); 
-      const c=parseFloat(r.credits.value);
+      const gp = parseFloat(r.gradePoints.value); 
+      const c = parseFloat(r.credits.value);
       
       // For F grades, credits count but quality points are 0
       if(letter === "F" && !isNaN(c)){
         cr += c;
-        // qp remains 0 for F grades
         continue;
       }
       
-      if(!isNaN(gp)&&!isNaN(c)){qp+=gp*c; cr+=c;}
+      if(!isNaN(gp) && !isNaN(c)){
+        qp += gp * c; 
+        cr += c;
+      }
     }
-    const gpa=cr>0?(qp/cr):0;
-    const gEl=termCard.querySelector(`#semGpa_${termCard.__index}`);
-    if(gEl) gEl.textContent=cr>0?gpa.toFixed(3):'0.000';
-    return{qp,cr};
+    
+    const gpa = cr > 0 ? (qp / cr) : 0;
+    const roundedGpa = roundGPA(gpa);
+    
+    const gEl = termCard.querySelector(`#semGpa_${termCard.__index}`);
+    if(gEl) gEl.textContent = cr > 0 ? gpa.toFixed(3) : '0.000';
+    
+    return {qp, cr, gpa, roundedGpa};
   }
 
   function computeAll(){
-    let runningQP=0,runningCR=0;
-    const termCards=[...document.querySelectorAll('.term')];
+    let runningQP = 0, runningCR = 0;
+    const termCards = [...document.querySelectorAll('.term')];
     
     // First, collect all courses and their grades
     const allCourses = [];
@@ -256,7 +441,7 @@
         const credits = parseFloat(row.credits.value) || 0;
         const qualityPoints = parseFloat(row.qualityPoints.value) || 0;
         
-        if (courseCode && grade !== "W") {
+        if (courseCode && grade !== "W" && grade !== "P" && grade !== "Select" && grade !== "") {
           allCourses.push({
             courseCode,
             grade,
@@ -268,10 +453,10 @@
       });
     });
     
-    // Now, process courses to handle retakes
+    // Process courses to handle retakes
     const courseMap = new Map();
     
-    // Process courses in chronological order (by term index)
+    // Process courses in chronological order
     allCourses.forEach(course => {
       if (!courseMap.has(course.courseCode)) {
         // First time seeing this course
@@ -295,16 +480,22 @@
       }
     });
     
-    // Update the cumulative GPA for each term
-    let cumulativeQP = 0;
-    let cumulativeCR = 0;
+    // Calculate overall GPA
+    const overallGpa = runningCR > 0 ? (runningQP / runningCR) : 0;
+    const overallRoundedGpa = roundGPA(overallGpa);
     
+    // Update overall statistics
+    document.getElementById('overallQp').textContent = runningQP.toFixed(3);
+    document.getElementById('overallCredits').textContent = runningCR.toFixed(0);
+    document.getElementById('overallGpa').textContent = runningCR > 0 ? overallGpa.toFixed(3) : '0.000';
+    document.getElementById('overallGpaRounded').textContent = runningCR > 0 ? overallRoundedGpa.toFixed(1) : '0.0';
+    
+    // Update the cumulative GPA for each term
     termCards.forEach((termCard, termIndex) => {
       // Calculate term-specific GPA
       const termResult = computeTerm(termCard);
       
-      // For cumulative GPA, we need to consider all courses up to this term
-      // with proper handling of retakes
+      // Calculate cumulative GPA up to this term
       const coursesUpToTerm = allCourses.filter(course => course.termIndex <= termIndex);
       const courseMapUpToTerm = new Map();
       let termCumulativeQP = 0;
@@ -328,33 +519,37 @@
         }
       });
       
+      const termCumulativeGpa = termCumulativeCR > 0 ? (termCumulativeQP / termCumulativeCR) : 0;
+      const termRoundedGpa = roundGPA(termCumulativeGpa);
+      
       const cEl = termCard.querySelector(`#cumGpa_${termCard.__index}`);
+      const rEl = termCard.querySelector(`#roundedGpa_${termCard.__index}`);
+      
       if (cEl) {
-        cEl.textContent = termCumulativeCR > 0 ? (termCumulativeQP / termCumulativeCR).toFixed(3) : '0.000';
+        cEl.textContent = termCumulativeCR > 0 ? termCumulativeGpa.toFixed(3) : '0.000';
+      }
+      if (rEl) {
+        rEl.textContent = termCumulativeCR > 0 ? termRoundedGpa.toFixed(1) : '0.0';
       }
     });
-    
-    document.getElementById('overallQp').textContent = runningQP.toFixed(3);
-    document.getElementById('overallCredits').textContent = runningCR.toFixed(0);
-    document.getElementById('overallGpa').textContent = runningCR > 0 ? (runningQP / runningCR).toFixed(3) : '0.000';
   }
 
   // ---------- SAVE/LOAD ----------
   function saveData(showMsg = true){
-    const data=[];
-    const termCards=[...document.querySelectorAll('.term')];
-    termCards.forEach(term=>{
-      const rows=[];
-      term.__rows.forEach(r=>{
+    const data = [];
+    const termCards = [...document.querySelectorAll('.term')];
+    termCards.forEach(term => {
+      const rows = [];
+      term.__rows.forEach(r => {
         rows.push({
-          courseCode:r.courseCode.value,
-          subject:r.subject.value,
-          seventh:r.seventh.value,
-          twelfth:r.twelfth.value,
-          work:r.work.value,
-          final:r.final.value,
-          credits:r.credits.value,
-          gradeLetter:r.gradeLetter.value
+          courseCode: r.courseCode.value,
+          subject: r.subject.value,
+          seventh: r.seventh.value,
+          twelfth: r.twelfth.value,
+          work: r.work.value,
+          final: r.final.value,
+          credits: r.credits.value,
+          gradeLetter: r.gradeLetter.value
         });
       });
       data.push(rows);
@@ -362,30 +557,30 @@
     localStorage.setItem("gpaData", JSON.stringify(data));
 
     if(showMsg){
-      const msg=document.getElementById("saveStatus");
-      msg.style.opacity=1;
-      setTimeout(()=> msg.style.opacity=0, 2000);
+      const msg = document.getElementById("saveStatus");
+      msg.style.opacity = 1;
+      setTimeout(() => msg.style.opacity = 0, 2000);
     }
   }
 
   function loadData(){
-    const saved=localStorage.getItem("gpaData");
+    const saved = localStorage.getItem("gpaData");
     if(!saved) return;
-    const data=JSON.parse(saved);
-    const termCards=[...document.querySelectorAll('.term')];
-    data.forEach((rows,ti)=>{
+    const data = JSON.parse(saved);
+    const termCards = [...document.querySelectorAll('.term')];
+    data.forEach((rows, ti) => {
       if(termCards[ti]){
-        rows.forEach((row,ri)=>{
-          const r=termCards[ti].__rows[ri];
+        rows.forEach((row, ri) => {
+          const r = termCards[ti].__rows[ri];
           if(r){
-            r.courseCode.value=row.courseCode||"";
-            r.subject.value=row.subject||"";
-            r.seventh.value=row.seventh||"";
-            r.twelfth.value=row.twelfth||"";
-            r.work.value=row.work||"";
-            r.final.value=row.final||"";
-            r.credits.value=row.credits||"";
-            r.gradeLetter.value=row.gradeLetter||"";
+            r.courseCode.value = row.courseCode || "";
+            r.subject.value = row.subject || "";
+            r.seventh.value = row.seventh || "";
+            r.twelfth.value = row.twelfth || "";
+            r.work.value = row.work || "";
+            r.final.value = row.final || "";
+            r.credits.value = row.credits || "";
+            r.gradeLetter.value = row.gradeLetter || "";
             computeRow(r);
           }
         });
@@ -403,7 +598,6 @@
 
   // ---------- EXPORT/IMPORT ----------
   function exportData(){
-    // Save first, so the latest inputs are included
     saveData(false);
 
     const data = localStorage.getItem("gpaData");
@@ -435,12 +629,11 @@
     reader.onload = function(e){
       try {
         const importedData = JSON.parse(e.target.result);
-        // Validate the imported data structure
         if (Array.isArray(importedData) && importedData.length > 0 && 
             Array.isArray(importedData[0]) && importedData[0].length > 0) {
           localStorage.setItem("gpaData", JSON.stringify(importedData));
           alert("Data imported successfully! Reloading...");
-          location.reload(); // reload to apply imported data
+          location.reload();
         } else {
           alert("Invalid file format! The file doesn't contain valid GPA data.");
         }
@@ -450,21 +643,20 @@
     };
     reader.readAsText(file);
     
-    // Reset the file input to allow importing the same file again
     event.target.value = '';
   }
 
   function autoSave(){
-    saveData(false); // silent autosave
+    saveData(false);
   }
 
   // Build page
-  const cards=TERMS.map((name,i)=>makeTerm(name,i));
-  cards.forEach(c=>termsEl.appendChild(c));
+  const cards = TERMS.map((name, i) => makeTerm(name, i));
+  cards.forEach(c => termsEl.appendChild(c));
   computeAll();
 
   // Setup event listeners
-  document.getElementById("saveBtn").addEventListener("click", ()=>saveData(true));
+  document.getElementById("saveBtn").addEventListener("click", () => saveData(true));
   document.getElementById("loadBtn").addEventListener("click", loadData);
   document.getElementById("resetBtn").addEventListener("click", resetAll);
   document.getElementById("exportBtn").addEventListener("click", exportData);
