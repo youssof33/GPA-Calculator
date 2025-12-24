@@ -10,7 +10,7 @@
   }
   *{box-sizing:border-box}
   body{margin:0; font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial; background:var(--bg); color:var(--text)}
-  header{position:sticky; top:0; z-index:5; background:linear-gradient(180deg,rgba(11,15,20,0.95),rgba(11,15,20,0.75)); backdrop-filter:blur(6px);}
+  header{position:sticky; top:0; z-index:1000; background:linear-gradient(180deg,rgba(11,15,20,0.95),rgba(11,15,20,0.75)); backdrop-filter:blur(6px);}
   .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:12px 16px; border-bottom:1px solid #1f2937}
   h1{font-size:18px; margin:0 12px 0 0; font-weight:700}
   button{appearance:none; border:1px solid #1f2937; background:#111827; color:var(--text); padding:8px 12px; border-radius:10px; cursor:pointer}
@@ -20,14 +20,14 @@
   .wrap{padding:16px;}
   .terms{display:flex; gap:16px; overflow-x:auto; padding-bottom:16px}
   .term{min-width:1250px; background:var(--card); border:1px solid #223048; border-radius:16px; padding:12px;}
-  .term header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px}
+  .term header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; position:relative; z-index:1}
   .kpis{display:flex; gap:12px}
   .kpi{background:#0f1622; border:1px solid #263043; border-radius:12px; padding:8px 10px; min-width:140px}
   .kpi h4{margin:0; font-size:12px; color:var(--muted)}
   .kpi .val{font-size:18px; font-weight:700}
   table{width:100%; border-collapse:collapse; font-size:13px}
   th,td{border:1px solid #263043; padding:6px; text-align:center}
-  th{background:#0f1622; position:sticky; top:48px; z-index:3}
+  th{background:#0f1622; position:sticky; top:0; z-index:2}
   
   /* Remove scroll arrows from number inputs */
   input[type="number"]::-webkit-inner-spin-button,
@@ -225,7 +225,7 @@
       el('div',{class:'kpis'},[
         kpi('Semester GPA',`semGpa_${index}`),
         kpi('Cumulative GPA',`cumGpa_${index}`),
-        kpi('Rounded GPA',`roundedGpa_${index}`)  // Changed from 'Rounded Cum GPA'
+        kpi('Rounded GPA',`roundedGpa_${index}`)
       ])
     ]);
 
