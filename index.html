@@ -528,7 +528,7 @@
   const SUBJECT_ROWS = 8;
   const GRADE_POINTS = {"A+":4.0,"A":3.8,"A-":3.7,"B+":3.3,"B":3.0,"B-":2.7,"C+":2.3,"C":2.0,"C-":1.7,"D+":1.3,"D":1.0,"F":0.0};
   const GRADE_RANGES = [
-    {label:"F",  lo:0,   hi:59},  // Added F grade range
+    {label:"F",  lo:0,   hi:15},  // CHANGED: F grade range is now 0-15 (instead of 0-59)
     {label:"D",  lo:60, hi:63},
     {label:"D+", lo:64, hi:66},
     {label:"C-", lo:67, hi:69},
@@ -727,7 +727,7 @@
       return;
     }
     
-    // Calculate ranges for letter grades - INCLUDING F GRADE
+    // Calculate ranges for letter grades - F GRADE HAS 0-15 FINAL RANGE
     if(letter && letter !== "Select"){
       const band = GRADE_RANGES.find(b => b.label === letter);
       if(band){
@@ -735,14 +735,14 @@
         const lo = Math.max(0, band.lo - cwNum); 
         const hi = Math.max(0, band.hi - cwNum);
         
-        // For F grade (0-59), always show the range
+        // For F grade, show 0-15 Final Range regardless of coursework
         if (letter === "F") {
-          const loFormatted = formatNumber(lo);
-          const hiFormatted = formatNumber(hi);
-          r.finalRange.value = `${loFormatted}-${hiFormatted}`;
+          // Final Range is always 0-15 for F grade
+          r.finalRange.value = "0-15";
           
-          const totalLo = cwNum + lo;
-          const totalHi = cwNum + hi;
+          // Total Range is coursework + 0 to coursework + 15
+          const totalLo = cwNum;
+          const totalHi = cwNum + 15;
           const totalLoFormatted = formatNumber(totalLo);
           const totalHiFormatted = formatNumber(totalHi);
           r.totalRange.value = `${totalLoFormatted}-${totalHiFormatted}`;
