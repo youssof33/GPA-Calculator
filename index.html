@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AAST GPA Tracker</title>
+<title>AAST GPA Calculator</title>
 <style>
   :root {
     --primary: #2563eb;
@@ -79,32 +79,6 @@
     font-weight: 700;
     margin: 0;
     color: var(--text);
-  }
-  
-  .status-badge {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    color: var(--success);
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-left: auto;
-  }
-  
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    background: var(--success);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-  
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
   }
   
   /* Buttons - New Design */
@@ -467,6 +441,13 @@
   tbody tr:hover td {
     background: rgba(255, 255, 255, 0.05) !important;
   }
+  
+  /* Button group spacing */
+  .button-group {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+  }
 </style>
 </head>
 <body>
@@ -476,30 +457,27 @@
       <div class="logo">
         <div class="logo-icon">A</div>
         <div class="logo-text">
-          <h1>AAST GPA Tracker</h1>
+          <h1>AAST GPA Calculator</h1>
         </div>
       </div>
       
-      <span class="status-badge">
-        <span class="status-dot"></span>
-        Your data is saved in this browser
-      </span>
-      
-      <button class="btn btn-primary" id="saveBtn">
-        Save
-      </button>
-      
-      <button class="btn btn-secondary" id="exportBtn">
-        Export Data
-      </button>
-      
-      <button class="btn btn-secondary" id="importBtn">
-        Import Data
-      </button>
-      
-      <button class="btn btn-danger" id="resetBtn">
-        Reset All
-      </button>
+      <div class="button-group">
+        <button class="btn btn-primary" id="saveBtn">
+          Save to Browser
+        </button>
+        
+        <button class="btn btn-secondary" id="exportBtn">
+          Export Data
+        </button>
+        
+        <button class="btn btn-secondary" id="importBtn">
+          Import Data
+        </button>
+        
+        <button class="btn btn-danger" id="resetBtn">
+          Reset All
+        </button>
+      </div>
     </div>
   </header>
 
@@ -539,7 +517,7 @@
 
   <!-- Notification -->
   <div class="notification" id="saveNotification">
-    Saved!
+    Saved to browser!
   </div>
 
   <!-- Hidden Import Input -->
@@ -550,6 +528,7 @@
   const SUBJECT_ROWS = 8;
   const GRADE_POINTS = {"A+":4.0,"A":3.8,"A-":3.7,"B+":3.3,"B":3.0,"B-":2.7,"C+":2.3,"C":2.0,"C-":1.7,"D+":1.3,"D":1.0,"F":0.0};
   const GRADE_RANGES = [
+    {label:"F",  lo:0,   hi:59},  // Added F grade range
     {label:"D",  lo:60, hi:63},
     {label:"D+", lo:64, hi:66},
     {label:"C-", lo:67, hi:69},
@@ -748,6 +727,7 @@
       return;
     }
     
+    // Calculate ranges for letter grades - INCLUDING F GRADE
     if(letter && letter !== "Select"){
       const band = GRADE_RANGES.find(b => b.label === letter);
       if(band){
@@ -755,19 +735,33 @@
         const lo = Math.max(0, band.lo - cwNum); 
         const hi = Math.max(0, band.hi - cwNum);
         
-        if (lo === 0 && hi === 0) {
-          r.finalRange.value = '';
-        } else {
+        // For F grade (0-59), always show the range
+        if (letter === "F") {
           const loFormatted = formatNumber(lo);
           const hiFormatted = formatNumber(hi);
           r.finalRange.value = `${loFormatted}-${hiFormatted}`;
+          
+          const totalLo = cwNum + lo;
+          const totalHi = cwNum + hi;
+          const totalLoFormatted = formatNumber(totalLo);
+          const totalHiFormatted = formatNumber(totalHi);
+          r.totalRange.value = `${totalLoFormatted}-${totalHiFormatted}`;
+        } else {
+          // For other grades, show empty if range is 0-0
+          if (lo === 0 && hi === 0) {
+            r.finalRange.value = '';
+          } else {
+            const loFormatted = formatNumber(lo);
+            const hiFormatted = formatNumber(hi);
+            r.finalRange.value = `${loFormatted}-${hiFormatted}`;
+          }
+          
+          const totalLo = cwNum + lo;
+          const totalHi = cwNum + hi;
+          const totalLoFormatted = formatNumber(totalLo);
+          const totalHiFormatted = formatNumber(totalHi);
+          r.totalRange.value = `${totalLoFormatted}-${totalHiFormatted}`;
         }
-        
-        const totalLo = cwNum + lo;
-        const totalHi = cwNum + hi;
-        const totalLoFormatted = formatNumber(totalLo);
-        const totalHiFormatted = formatNumber(totalHi);
-        r.totalRange.value = `${totalLoFormatted}-${totalHiFormatted}`;
       } else {
         r.finalRange.value = '';
         r.totalRange.value = '';
@@ -777,6 +771,7 @@
       r.totalRange.value = '';
     }
 
+    // Calculate grade points and quality points
     const gp = GRADE_POINTS[letter] ?? ''; 
     r.gradePoints.value = gp ? formatNumber(gp, 2) : '';
     const cr = num(r.credits.value); 
@@ -793,8 +788,10 @@
       const gp = parseFloat(r.gradePoints.value); 
       const c = parseFloat(r.credits.value);
       
+      // For F grades, credits count but quality points are 0
       if(letter === "F" && !isNaN(c)){
         cr += c;
+        // qp remains 0 for F grades
         continue;
       }
       
@@ -928,6 +925,7 @@
 
     if(showMsg){
       const notification = document.getElementById("saveNotification");
+      notification.textContent = "Saved to browser!";
       notification.classList.add("show");
       setTimeout(() => notification.classList.remove("show"), 2000);
     }
@@ -978,7 +976,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "gpaData.json";
+    a.download = "aast-gpa-data.json";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
