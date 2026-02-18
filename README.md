@@ -1,8 +1,5 @@
 # GPA-Calculator
 AASTMT University  GPA Calculator
-
-## Copyright Notice
-
-© 2025 Youssof Hossam.  
-This GPA calculator is provided for personal academic use only.  
-Redistribution, modification, or commercial use without permission is prohibited.
+A comprehensive, dark-themed GPA calculator designed for AAST (Arab Academy for Science and Technology) students. It supports up to 15 terms (semesters and summers) with automatic grade range calculations, cumulative GPA tracking, and data persistence in your browser.
+This project was developed with the assistance of AI by DeepSeek.
+https://youssof33.github.io/GPA-Calculator/
